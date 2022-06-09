@@ -5,44 +5,42 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace AO3Subscriptions
+namespace FanFictionScraper
 {
 	class Program
 	{
 		static void Main(string[] args)
 		{
-			ChromeOptions options = new ChromeOptions();
-			options.AddArguments("--disable-notifications");
-			//Now initialize chrome driver with chrome options which will switch off this browser notification on the chrome browser
-			using (var driver = new ChromeDriver(options))
-			{
-				driver.Navigate().GoToUrl("https://archiveofourown.org/users/callmebob/subscriptions");
-				var links = new List<string>();
-				for (int i = 1; i < 70; i++)
-				{
-					driver.Navigate().GoToUrl("https://archiveofourown.org/users/callmebob/bookmarks?page=" + i);
-					Wait(driver);
-					var list = driver.FindElementsByXPath("//dl/dt/a");
-					 list = driver.FindElementsByXPath("//li/div/h4/a");
-					links.AddRange(list.Select(l => l.GetAttribute("href")).Where(l=>l.Contains("/works/")));
-				}
-				foreach (var item in links)
-				{
-					Console.WriteLine(item);
-				}
-			}
+			var ao3 = new ArchiveOfOurOwn.Site();
+			var ffn = new FanFictionNet.Site();
+			var ficwad = new FicWad.Site();
+			var hpaff = new HP.Adult_FanFiction.Site();
+
+			hpaff.SiteToDatabase();
+
+			ffn.FixSubscriptions();
+			ao3.FixSubscriptions();
+
+			var toAdd = ffn.Favorites.Except(ffn.Calibre).ToList();
+			toAdd.AddRange(ffn.Subscriptions.Except(ffn.Calibre));
+			toAdd.AddRange(ao3.Favorites.Except(ao3.Calibre));
+			toAdd.AddRange(ao3.Subscriptions.Except(ao3.Calibre));
+			toAdd = toAdd.Distinct().ToList();
+
+			Console.Clear();
+			Console.WriteLine("Need to add to Calibre:");
+			foreach (var item in toAdd)
+				Console.WriteLine(item);
 		}
 
-		protected static void Wait(ChromeDriver driver, int minWaitInMs = 500, int maxWaitInSec = 30)
-		{
-			System.Threading.Thread.Sleep(minWaitInMs);
-			IWait<IWebDriver> wait = new WebDriverWait(driver, TimeSpan.FromSeconds(maxWaitInSec));
-			try
-			{
-				wait.Until(driver1 => ((IJavaScriptExecutor)driver).ExecuteScript("return document.readyState").Equals("complete"));
-			}
-			catch (Exception ex)
-			{ }
-		}
+
+
+
+
+
+
+
+
+
 	}
 }
